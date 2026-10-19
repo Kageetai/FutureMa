@@ -2,6 +2,13 @@
 
 Researched 17 October 2026. Status: proposed plan; no application or hosting changes made.
 
+Implementation update, 19 October 2026: the owner chose **manual backups**.
+This supersedes the daily/off-host backup automation tasks below. Keep the
+consistent backup and recovery tools, document manual server snapshots and
+off-host copies, and do not install a backup cron job or local scheduler.
+Current implementation/deployment evidence is tracked in
+`docs/IMPLEMENTATION_STATUS.md`; the original research and checklist remain below.
+
 ## Goal and proposed scope
 
 Write a private letter in a browser, configure its future delivery date and time, and receive the letter by email on or after that scheduled time. Keep this small enough to understand and maintain yourself on an existing Uberspace account.

@@ -1,0 +1,12 @@
+/config.php
+/var/
+/.superpowers/
+*.sqlite*
+*.db
+*.db-*
+*.log
+*.eml
+.env
+.htpasswd
+*msmtprc*
+.DS_Store

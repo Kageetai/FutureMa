@@ -1,0 +1,19 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# Edit both absolute paths before publishing. Missing auth configuration fails closed.
+AuthType Basic
+AuthName "FutureMa"
+AuthUserFile /var/www/virtual/ACCOUNT/futurema-auth/.htpasswd
+Require valid-user
+SetEnv FUTUREMA_APP /home/ACCOUNT/futurema/app.php
+
+# Do not redirect a POST; configure HTTPS and use its URL from the outset.
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ - [F]
+
+LimitRequestBody 2097152
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
