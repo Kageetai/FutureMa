@@ -110,10 +110,11 @@ Rotate logs and check disk quota periodically. Backups remain [manual](BACKUPS.m
 
 Back up first. Preserve private configuration, data, backups, credentials and
 the published server configuration. Pull reviewed code, run checks and publish
-updated public files without overwriting configured paths. For database changes,
-stop all writers using the [recovery procedure](BACKUPS.md#restore). This version
-has no schema migrations; future migrations need their own rollback steps.
+updated public files without overwriting configured paths. For database replacement,
+stop using the form, pause the sender and follow the [restore steps](BACKUPS.md#restore).
+This version has no schema migrations.
 Never clean ignored files from a deployment.
 
-To remove the service, block this site, remove only its sender job and wait for
-active writers. Retain private data and backups until deliberately deleting them.
+To remove your installation, stop using the form, enable maintenance, remove its
+sender job and wait for a running sender to finish. Then remove the public site
+files. Keep private data and backups until you deliberately choose to delete them.

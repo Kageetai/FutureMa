@@ -1,8 +1,8 @@
 # FutureMa
 
-Write a private letter, choose a future date, hour and time zone, and receive it
-by email. Built with PHP, SQLite and an hourly cron job—no framework, JavaScript
-or build step.
+A single-user app to write a private letter, choose a future date, hour and time
+zone, and receive it by email. Built with PHP, SQLite and an hourly cron job—no
+framework, JavaScript or build step.
 
 ## How it works
 
