@@ -78,6 +78,18 @@ if (!isset($_SESSION['forms'][$key])) {
 }
 $csrf = $_SESSION['csrf'];
 session_write_close();
+$letters = [];
+$overviewError = '';
+if (isset($config) && !is_file($config['maintenance'])) {
+    try {
+        $letters = FutureMa\database($config['database'])->query(
+            'SELECT subject, body, due_at, delivery_timezone, submitted_at, attempts FROM letters ORDER BY due_at DESC, created_at DESC, id'
+        )->fetchAll();
+    } catch (Throwable) {
+        http_response_code(503);
+        $overviewError = 'Your letters could not be loaded. Please try again later.';
+    }
+}
 function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>
 <!doctype html>
@@ -98,6 +110,11 @@ function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTE
         :focus-visible { outline: 3px solid #4b88d8; outline-offset: 3px; }
         .notice { border: 2px solid currentColor; border-radius: .3rem; padding: 1rem; }
         .hint { font-size: .9rem; }
+        #letters { margin-top: 3rem; }
+        .letter { border-top: 1px solid currentColor; padding: 1rem 0; overflow-wrap: anywhere; }
+        .letter h3 { margin: 0; }
+        summary { cursor: pointer; }
+        .letter-body { white-space: pre-wrap; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -137,6 +154,30 @@ function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTE
         <p id="schedule-hint" class="hint">Delivery is submitted on the first hourly run at or after your chosen time. In zones with half-hour or quarter-hour offsets, this may be up to an hour later. Inbox arrival depends on mail processing. Hours skipped or repeated when clocks change cannot be selected. Travel will not change a saved delivery time.</p>
         <button type="submit">Seal this letter</button>
     </form>
+    <?php if (isset($config) && !is_file($config['maintenance'])): ?>
+    <section id="letters" aria-labelledby="letters-heading">
+        <h2 id="letters-heading">Your letters</h2>
+        <p>Past and pending letters, latest scheduled date first. Open a letter to read its contents.</p>
+        <?php if ($overviewError !== ''): ?>
+            <p class="notice" role="alert"><?= escape($overviewError) ?></p>
+        <?php elseif (!$letters): ?>
+            <p>No letters yet.</p>
+        <?php else: ?>
+            <?php foreach ($letters as $letter):
+                $scheduled = (new DateTimeImmutable('@' . $letter['due_at']))->setTimezone(new DateTimeZone($letter['delivery_timezone']));
+                $status = $letter['submitted_at'] !== null ? 'Submitted to mail' : ($letter['attempts'] >= 5 ? 'Needs attention' : 'Pending'); ?>
+                <article class="letter">
+                    <h3><?= escape($letter['subject']) ?></h3>
+                    <p><?= escape($status) ?> · Scheduled for <?= escape($scheduled->format('Y-m-d H:i') . ' ' . $letter['delivery_timezone']) ?></p>
+                    <details>
+                        <summary>Read letter</summary>
+                        <div class="letter-body"><?= escape($letter['body']) ?></div>
+                    </details>
+                </article>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </section>
+    <?php endif; ?>
 </main>
 </body>
 </html>

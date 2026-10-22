@@ -36,6 +36,7 @@ function httpChecks(string $directory, array $config): void
         check(str_contains($headers[0], '401'), 'unauthenticated POST denied');
         [$body, $headers] = $request();
         check(str_contains($headers[0], '200'), 'authenticated form available');
+        check(str_contains($body, 'No letters yet.'), 'overview explains empty archive');
         check(in_array('Cache-Control: no-store', $headers, true), 'private page not cached');
         $cookie = '';
         foreach ($headers as $header) {
@@ -64,6 +65,23 @@ function httpChecks(string $directory, array $config): void
         check(str_contains($headers[0], '303') && (int) $db->query('SELECT COUNT(*) FROM letters')->fetchColumn() === 1, 'double POST idempotent');
         [$body, $headers] = $request(cookie: $cookie);
         check(str_contains($body, 'Scheduled for') && str_contains($body, 'Europe/Berlin') && !str_contains($body, '<script>'), 'confirmation omits letter content');
+        check(str_contains($body, 'Pending') && str_contains($body, '2099-07-01 10:00 Europe/Berlin'), 'overview shows pending schedule in saved zone');
+        check(str_contains($body, '&lt;script&gt;alert(1)&lt;/script&gt;'), 'overview escapes subject');
+        check(preg_match('/<details>\s*<summary>Read letter<\/summary>\s*<div class="letter-body">🌱/u', $body) === 1
+            && !preg_match('/<details[^>]*\bopen\b/', $body), 'letter body is inside a collapsed disclosure');
+        $past = FutureMa\saveLetter($db, ['subject' => 'Past letter', 'body' => "First line\n<script>private</script>",
+            'date' => '2020-07-01', 'hour' => '10:00', 'timezone' => 'UTC'], str_repeat('a', 64), 0);
+        $db->prepare('UPDATE letters SET submitted_at = ? WHERE id = ?')->execute([1593597600, $past['id']]);
+        [$overview, $overviewHeaders] = $request(cookie: $cookie);
+        check(str_contains($overview, 'Past letter') && str_contains($overview, 'Submitted to mail')
+            && str_contains($overview, 'Pending'), 'overview includes both past and pending letters');
+        check(str_contains($overview, "First line\n&lt;script&gt;private&lt;/script&gt;")
+            && !str_contains($overview, '<script>'), 'past body preserves lines and escapes HTML');
+        [$private, $privateHeaders] = $request(auth: false);
+        check(str_contains($privateHeaders[0], '401') && !str_contains($private, 'Past letter'), 'archive remains authenticated');
+        $db->exec('UPDATE letters SET attempts = 5 WHERE submitted_at IS NULL');
+        [$overview] = $request(cookie: $cookie);
+        check(str_contains($overview, 'Needs attention'), 'exhausted letters are distinguished from pending delivery');
         preg_match('/name="submission_key" value="([a-f0-9]+)"/', $body, $newKey);
         $form['submission_key'] = $newKey[1];
         $form['body'] .= '🌱';
@@ -74,6 +92,7 @@ function httpChecks(string $directory, array $config): void
         touch($config['maintenance']);
         [$body, $headers] = $request('POST', http_build_query($form), $cookie);
         check(str_contains($headers[0], '503'), 'maintenance blocks POST');
+        check(!str_contains($body, 'Past letter'), 'maintenance does not load archive');
         unlink($config['maintenance']);
         $form['body'] = 'A letter that cannot be saved';
         // SQLite’s query-only test covers the save failure; a missing parent exercises HTTP failure.

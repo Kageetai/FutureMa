@@ -11,8 +11,11 @@ The sender submits it on the first hourly run at or after that time, catching
 up after downtime. Hours skipped or repeated by daylight-saving changes are
 rejected. Zones with fractional-hour offsets may wait until the next cron run.
 
-One recipient is configured privately. There is no public registration, letter
-archive or reading endpoint. Submitted letters are retained for recovery.
+One recipient is configured privately. There is no public registration. The
+password-protected page lists all retained past and pending letters with their
+scheduled dates and delivery status. Letter bodies are collapsed by default;
+select “Read letter” to expand one. Submitted letters remain stored for reference
+and recovery. “Submitted to mail” means transport acceptance, not inbox arrival.
 
 ## Requirements
 
