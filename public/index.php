@@ -110,9 +110,16 @@ function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTE
         :focus-visible { outline: 3px solid #4b88d8; outline-offset: 3px; }
         .notice { border: 2px solid currentColor; border-radius: .3rem; padding: 1rem; }
         .hint { font-size: .9rem; }
+        .schedule-fields > div { min-width: 0; }
+        .schedule-fields input, .schedule-fields select { width: 100%; height: 3.2rem; }
+        @media (min-width: 48rem) {
+            .schedule-fields { display: grid; grid-template-columns: 1fr .8fr 1.5fr; gap: 1rem; }
+        }
         #letters { margin-top: 3rem; }
         .letter { border-top: 1px solid currentColor; padding: 1rem 0; overflow-wrap: anywhere; }
+        .letter-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin-bottom: .5rem; }
         .letter h3 { margin: 0; }
+        .letter-meta { margin: 0; font-size: .8rem; }
         summary { cursor: pointer; }
         .letter-body { white-space: pre-wrap; margin-top: 1rem; }
     </style>
@@ -137,20 +144,28 @@ function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTE
         <label for="body">Your letter</label>
         <textarea id="body" name="body" required aria-describedby="body-hint"><?= escape($values['body']) ?></textarea>
         <span id="body-hint" class="hint">Plain text, up to 100,000 characters. Your writing and its backups are private to the hosting account, but are not encrypted.</span>
-        <label for="date">Delivery date</label>
-        <input id="date" name="date" type="date" required value="<?= escape($values['date']) ?>">
-        <label for="hour">Delivery hour</label>
-        <select id="hour" name="hour" required>
-            <?php for ($hour = 0; $hour < 24; $hour++): $option = sprintf('%02d:00', $hour); ?>
-                <option value="<?= $option ?>" <?= $values['hour'] === $option ? 'selected' : '' ?>><?= $option ?></option>
-            <?php endfor; ?>
-        </select>
-        <label for="timezone">Delivery time zone</label>
-        <select id="timezone" name="timezone" required aria-describedby="schedule-hint">
-            <?php foreach (FutureMa\timezones() as $zone): ?>
-                <option value="<?= escape($zone) ?>" <?= $values['timezone'] === $zone ? 'selected' : '' ?>><?= escape($zone) ?></option>
-            <?php endforeach; ?>
-        </select>
+        <div class="schedule-fields">
+            <div>
+                <label for="date">Delivery date</label>
+                <input id="date" name="date" type="date" required value="<?= escape($values['date']) ?>">
+            </div>
+            <div>
+                <label for="hour">Delivery hour</label>
+                <select id="hour" name="hour" required>
+                    <?php for ($hour = 0; $hour < 24; $hour++): $option = sprintf('%02d:00', $hour); ?>
+                        <option value="<?= $option ?>" <?= $values['hour'] === $option ? 'selected' : '' ?>><?= $option ?></option>
+                    <?php endfor; ?>
+                </select>
+            </div>
+            <div>
+                <label for="timezone">Delivery time zone</label>
+                <select id="timezone" name="timezone" required aria-describedby="schedule-hint">
+                    <?php foreach (FutureMa\timezones() as $zone): ?>
+                        <option value="<?= escape($zone) ?>" <?= $values['timezone'] === $zone ? 'selected' : '' ?>><?= escape($zone) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
         <p id="schedule-hint" class="hint">Delivery is submitted on the first hourly run at or after your chosen time. In zones with half-hour or quarter-hour offsets, this may be up to an hour later. Inbox arrival depends on mail processing. Hours skipped or repeated when clocks change cannot be selected. Travel will not change a saved delivery time.</p>
         <button type="submit">Seal this letter</button>
     </form>
@@ -167,8 +182,10 @@ function escape(string $text): string { return htmlspecialchars($text, ENT_QUOTE
                 $scheduled = (new DateTimeImmutable('@' . $letter['due_at']))->setTimezone(new DateTimeZone($letter['delivery_timezone']));
                 $status = $letter['submitted_at'] !== null ? 'Submitted to mail' : ($letter['attempts'] >= 5 ? 'Needs attention' : 'Pending'); ?>
                 <article class="letter">
-                    <h3><?= escape($letter['subject']) ?></h3>
-                    <p><?= escape($status) ?> · Scheduled for <?= escape($scheduled->format('Y-m-d H:i') . ' ' . $letter['delivery_timezone']) ?></p>
+                    <header class="letter-header">
+                        <h3><?= escape($letter['subject']) ?></h3>
+                        <p class="letter-meta"><?= escape($status) ?> · Scheduled for <?= escape($scheduled->format('Y-m-d H:i') . ' ' . $letter['delivery_timezone']) ?></p>
+                    </header>
                     <details>
                         <summary>Read letter</summary>
                         <div class="letter-body"><?= escape($letter['body']) ?></div>
